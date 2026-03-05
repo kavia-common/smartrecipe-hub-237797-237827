@@ -10,22 +10,28 @@ def _build_database_url() -> str:
     """Build a SQLAlchemy database URL.
 
     Priority:
-    1) If POSTGRES_URL is already a full SQLAlchemy URL, use it.
-    2) Otherwise compose from individual POSTGRES_* parts.
+    1) DATABASE_URL (single env var) if set.
+    2) POSTGRES_URL if set.
+    3) Compose from individual POSTGRES_* parts.
 
-    The database container provides a POSTGRES_URL like:
-      postgresql://localhost:5000/myapp
-    SQLAlchemy + psycopg expects:
-      postgresql+psycopg://...
+    Notes:
+    - Some environments provide `DATABASE_URL=postgresql://...`
+    - SQLAlchemy + psycopg expects `postgresql+psycopg://...`
     """
-    if settings.POSTGRES_URL:
-        url = settings.POSTGRES_URL.strip()
+
+    def _normalize(url: str) -> str:
+        url = url.strip()
         if url.startswith("postgresql+psycopg://"):
             return url
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+psycopg://", 1)
-        # If user provided already (e.g. with +psycopg or other), keep as-is.
         return url
+
+    if settings.DATABASE_URL:
+        return _normalize(settings.DATABASE_URL)
+
+    if settings.POSTGRES_URL:
+        return _normalize(settings.POSTGRES_URL)
 
     # Fallback compose (rare in this template)
     user = settings.POSTGRES_USER

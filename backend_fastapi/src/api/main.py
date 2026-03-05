@@ -23,7 +23,13 @@ app = FastAPI(
     openapi_tags=openapi_tags,
 )
 
-allow_origins = [o.strip() for o in settings.CORS_ALLOW_ORIGINS.split(",") if o.strip()]
+cors_origins_raw = (
+    settings.CORS_ORIGINS
+    or settings.ALLOWED_ORIGINS
+    or settings.CORS_ALLOW_ORIGINS
+    or ""
+)
+allow_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()]
 if not allow_origins:
     allow_origins = ["*"]
 
